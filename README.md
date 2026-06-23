@@ -2,25 +2,31 @@ MS-TGMF
 
 MS-TGMF: Multi-Scale Temporal Gated Memory Fusion for Occlusion-Robust LiDAR-BEV Lane Detection
 
-This repository provides the implementation of MS-TGMF, a LiDAR-BEV lane detection method built upon the official K-Lane Proj28-GFC-T3-RowRef framework. The proposed method introduces three feature enhancement modules between the backbone and the RowRef lane detection head:
+This repository provides the implementation of MS-TGMF, a LiDAR-BEV lane detection method built upon the official K-Lane Proj28-GFC-T3-RowRef framework.
+
+MS-TGMF introduces three feature enhancement modules between the backbone and the RowRef lane detection head:
 
 * TGMF: Temporal Gated Memory Fusion
 * MSCE: Multi-Scale Context Enhancement
 * DCRB: Directional Context Refinement Block
 
-The goal of this work is to improve the robustness of LiDAR-BEV lane detection under challenging scenarios such as occlusion, sparse point clouds, curves, and merging/diverging lanes.
+The proposed method aims to improve the robustness of LiDAR-BEV lane detection under challenging scenarios, including occlusion, sparse point clouds, curves, and merging/diverging lanes.
 
 ⸻
 
 Overview
 
-LiDAR-BEV lane detection often suffers from local discontinuity and missed lane responses when lane markings are occluded or sparsely observed. To address this issue, MS-TGMF enhances BEV lane features from three complementary perspectives:
+LiDAR-BEV lane detection may suffer from local discontinuity and missed lane responses when lane markings are occluded or sparsely observed. MS-TGMF enhances BEV lane features from three complementary perspectives.
 
-1. Temporal compensation: TGMF uses adjacent historical frames to provide complementary structural information for the current frame.
-2. Multi-scale context modeling: MSCE captures local and larger-range spatial context using multi-branch convolution and dilated convolution.
-3. Directional structure refinement: DCRB strengthens horizontal lane relationships and vertical lane extension trends using strip convolutions.
+First, TGMF uses adjacent historical frames to provide temporal structural compensation for the current frame. Second, MSCE captures local and larger-range spatial context using multi-branch convolution and dilated convolution. Third, DCRB refines directional structure using horizontal and vertical strip convolutions.
 
 The overall framework keeps the original RowRef lane detection head and training objective unchanged.
+
+⸻
+
+Framework
+
+The overall architecture is shown below.
 
 ⸻
 
@@ -28,14 +34,14 @@ Project Structure
 
 MS-TGMF-release/
 ├── assets/                         # Figures and visualization examples
-├── baseline/                       # Main K-Lane baseline framework and modified model code
+├── baseline/                       # K-Lane baseline framework and modified model code
 │   ├── datasets/                   # Dataset loading and registration
 │   ├── engine/                     # Training and evaluation engine
 │   ├── models/                     # Backbone, head, point encoder, and network modules
 │   ├── utils/                      # Utility functions
 │   └── vis/                        # Visualization tools
 ├── configs/                        # Configuration files
-├── docs/                           # Original K-Lane documentation
+├── docs/                           # K-Lane documentation
 ├── tools/                          # Additional tools
 │   ├── measure_model_efficiency.py # Params/FLOPs/FPS measurement
 │   ├── pickle_to_bev_png.py
@@ -56,7 +62,7 @@ Create a conda environment:
 conda create -n mstgmf python=3.8 -y
 conda activate mstgmf
 
-Install the required packages:
+Install dependencies:
 
 pip install -r requirements.txt
 
@@ -88,7 +94,7 @@ python train.py configs/Proj28_GFC-T3_RowRef_82_73.py
 
 The final MS-TGMF configuration is based on the Proj28-GFC-T3-RowRef framework. The proposed modules are inserted between the backbone and the RowRef lane detection head.
 
-If different module combinations are required for ablation studies, please modify the corresponding switches in the configuration file.
+For ablation studies, please modify the corresponding module switches in the configuration file.
 
 ⸻
 
@@ -116,20 +122,20 @@ Main Results
 
 The following results are obtained on the K-Lane validation setting with the reproduced Proj28-GFC-T3-RowRef baseline.
 
-Method	Epoch	Total	Night	Merging	Curve	Occ4-6
-GFC-T3 Reported	60	82.100	82.000	81.000	78.000	75.900
-GFC-T3 Reproduced	35	81.309	81.468	78.398	73.932	76.288
-+TGMF	35	81.410	81.639	78.630	74.168	77.870
-+TGMF + MSCE	35	81.350	81.650	78.420	73.870	78.360
-MS-TGMF, alpha=0.7	35	81.497	81.626	79.167	74.693	79.048
+Method	            Epoch	Total	       Night	Merging	Curve	      Occ4-6
+GFC-T3 Reported	       60	82.100	82.000	81.000	78.000	75.900
+GFC-T3 Reproduced	       35	81.309	81.468	78.398	73.932	76.288
++TGMF	                   35	81.410	81.639	78.630	74.168	77.870
++TGMF + MSCE	       35	81.350	81.650	78.420	73.870	78.360
+MS-TGMF, alpha=0.7	 35	81.497	81.626	79.167	74.693	79.048
 
-Compared with the reproduced baseline, MS-TGMF improves the performance on challenging scenarios, especially under severe occlusion. The Occ4-6 score is improved from 76.288 to 79.048.
+Compared with the reproduced baseline, MS-TGMF improves performance in challenging scenarios, especially under severe occlusion. The Occ4-6 score is improved from 76.288 to 79.048.
 
 ⸻
 
 Visualization
 
-Some BEV visualization examples are provided in the assets/ directory.
+Some BEV visualization examples and module figures are provided in the assets/ directory.
 
 assets/
 ├── architecture_v11.png
@@ -143,9 +149,9 @@ assets/
 
 Notes
 
-This repository is built upon the official K-Lane baseline framework. The annotation tools and original documentation are inherited from the K-Lane project. The proposed MS-TGMF modules are implemented within the baseline framework.
+This repository is built upon the official K-Lane baseline framework. The original documentation is kept in the docs/ directory. The proposed MS-TGMF modules are implemented within the baseline framework.
 
-The code is mainly intended for academic research and reproducibility.
+This code is intended for academic research and reproducibility.
 
 ⸻
 
