@@ -1,0 +1,51 @@
+{
+  "protocol": "official_train_test_repeat_v1",
+  "notes": "Runner.validate() reads dataset.test and best.pth is selected on official-test confidence F1; this is not an independent validation set.",
+  "runs": [
+    {
+      "model": "baseline",
+      "seed": 2021,
+      "result_format": "legacy_conditional_log",
+      "result": "logs/baseline/vis/val.txt",
+      "config": "logs/baseline/2026-06-21-09-36-42/configs_Proj28_GFC-T3_RowRef_82_73.txt",
+      "checkpoint": "logs/baseline/2026-06-21-09-36-42/ckpt/best.pth",
+      "source": "verified existing 35-epoch run; no retraining",
+      "comparable": true
+    },
+    {
+      "model": "baseline",
+      "seed": 3407,
+      "result": "runs/repeat_official_v1/baseline/seed_3407/test_metrics.json",
+      "source": "new run",
+      "comparable": true
+    },
+    {
+      "model": "baseline",
+      "seed": 42,
+      "result": "runs/repeat_official_v1/baseline/seed_42/test_metrics.json",
+      "source": "new run",
+      "comparable": true
+    },
+    {
+      "model": "mstgmf",
+      "seed": 2021,
+      "result": "runs/repeat_official_v1/mstgmf/seed_2021/test_metrics.json",
+      "source": "new run with exercised temporal branch",
+      "comparable": true
+    },
+    {
+      "model": "mstgmf",
+      "seed": 3407,
+      "result": "runs/repeat_official_v1/mstgmf/seed_3407/test_metrics.json",
+      "source": "new run with exercised temporal branch",
+      "comparable": true
+    },
+    {
+      "model": "mstgmf",
+      "seed": 42,
+      "result": "runs/repeat_official_v1/mstgmf/seed_42/test_metrics.json",
+      "source": "new run with exercised temporal branch",
+      "comparable": true
+    }
+  ]
+}

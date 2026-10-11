@@ -7,8 +7,7 @@
 import torch
 from torch import nn
 
-from einops import rearrange, repeat
-from einops.layers.torch import Rearrange
+from baseline.utils.einops_compat import Rearrange, rearrange, repeat
 
 from baseline.models.registry import BACKBONE
 

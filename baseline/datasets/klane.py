@@ -29,7 +29,12 @@ class KLane(Dataset):
         self.cfg = cfg
         self.data_root = data_root
         self.mode_item = mode_item
+        self.split = split
         self.training = 'train' in split
+        self.use_temporal = bool(getattr(cfg, 'use_temporal', False))
+        self.num_history = int(getattr(getattr(cfg, 'temporal', {}), 'num_history', 2))
+        if self.use_temporal and self.num_history != 2:
+            raise ValueError('Detector currently requires exactly two history frames')
         self.num_seq = len(os.listdir(osp.join(data_root, 'train')))
         self.list_data_type = ['bev_image', 'bev_image_label', 'bev_tensor', 'frontal_img', 'pc']
         self.list_data_tail = ['.pickle', '.pickle', '.pickle', '.jpg', '.pcd']
@@ -58,10 +63,12 @@ class KLane(Dataset):
             list_description[-1] = list_description[-1][:-1] # delete \n
             temp_description.close()
 
-            for name_tensor_label in list_tensor_label:
+            for label_idx, name_tensor_label in enumerate(list_tensor_label):
                 temp_data_info = dict()
                 temp_data_info['bev_tensor_label'] = osp.join(train_root, name_seq, 'bev_tensor_label', name_tensor_label)
                 temp_data_info['description'] = list_description
+                temp_data_info['sequence'] = name_seq
+                temp_data_info['split'] = 'train'
                 time_string = self.get_time_string(name_tensor_label)
                 
                 for idx, data_type in enumerate(self.list_data_type):
@@ -70,6 +77,15 @@ class KLane(Dataset):
                         temp_data_info[data_type] = osp.join(train_root, name_seq, data_type, temp_data_name)
                     else:
                         temp_data_info[data_type] = None
+
+                # History is selected only from labels in this same official split
+                # and this same driving sequence. At a sequence boundary we repeat
+                # the earliest available split-local frame instead of crossing it.
+                for offset, key in ((1, 'pc_tm1'), (2, 'pc_tm2')):
+                    history_label = list_tensor_label[max(0, label_idx - offset)]
+                    history_time = self.get_time_string(history_label)
+                    history_name = 'pc_' + history_time + '.pcd'
+                    temp_data_info[key] = osp.join(train_root, name_seq, 'pc', history_name)
                 data_infos.append(temp_data_info)
         return data_infos
 
@@ -108,14 +124,35 @@ class KLane(Dataset):
                 list_list_data[i].extend(temp_list_list_data[i])
         # print(list_list_data)
 
-        for name_tensor_label in sorted(os.listdir(test_root)):
-            temp_data_info = dict()
+        time_to_seq = {}
+        for time_string, name_seq in zip(list_time_string, list_corresponding_seq):
+            if time_string in time_to_seq and time_to_seq[time_string] != name_seq:
+                raise ValueError('Ambiguous timestamp across sequences: {}'.format(time_string))
+            time_to_seq[time_string] = name_seq
+
+        test_labels = sorted(os.listdir(test_root))
+        test_entries = []
+        split_times_by_seq = {}
+        for name_tensor_label in test_labels:
             time_string = self.get_time_string(name_tensor_label)
-            
-            corresponding_idx = list_time_string.index(time_string)
+            if time_string not in time_to_seq:
+                raise ValueError('Cannot map official test timestamp to a sequence: {}'.format(time_string))
+            name_seq = time_to_seq[time_string]
+            test_entries.append((name_tensor_label, time_string, name_seq))
+            split_times_by_seq.setdefault(name_seq, []).append(time_string)
+
+        split_index_by_time = {
+            (name_seq, time_string): idx
+            for name_seq, time_strings in split_times_by_seq.items()
+            for idx, time_string in enumerate(time_strings)
+        }
+
+        for name_tensor_label, time_string, name_seq in test_entries:
+            temp_data_info = dict()
 
             temp_data_info['bev_tensor_label'] = osp.join(test_root, name_tensor_label)
-            name_seq = list_corresponding_seq[corresponding_idx]
+            temp_data_info['sequence'] = name_seq
+            temp_data_info['split'] = 'test'
             # temp_data_info['description'] = list_list_description[int(name_seq.split('_')[-1])-1]
             
             for desc in list_test_descriptions:
@@ -133,8 +170,25 @@ class KLane(Dataset):
                     temp_data_info[data_type] = osp.join(train_root, name_seq, data_type, temp_data_name)
                 else:
                     temp_data_info[data_type] = None
+
+            split_times = split_times_by_seq[name_seq]
+            split_idx = split_index_by_time[(name_seq, time_string)]
+            for offset, key in ((1, 'pc_tm1'), (2, 'pc_tm2')):
+                history_time = split_times[max(0, split_idx - offset)]
+                history_name = 'pc_' + history_time + '.pcd'
+                temp_data_info[key] = osp.join(train_root, name_seq, 'pc', history_name)
             data_infos.append(temp_data_info)
         return data_infos
+
+    def project_pc(self, path_pc):
+        if not osp.isfile(path_pc):
+            raise FileNotFoundError('cannot find file: {}'.format(path_pc))
+        pc = get_pc_os64_with_path(path_pc)
+        pc = filter_pc_os64_with_roi(pc, self.cfg.list_filter_roi, self.cfg.filter_mode)
+        pc = append_image_index_to_pc_os64(pc, self.cfg.list_roi_xy, self.cfg.list_grid_xy)
+        proj = get_projection_image_from_pointclouds(
+            pc, list_img_size_xy=self.cfg.list_img_size_xy, is_flip=False)
+        return np.transpose(proj, (2, 0, 1)).astype(np.float32)
 
     def __len__(self):
         return len(self.data_infos)
@@ -183,13 +237,11 @@ class KLane(Dataset):
                 bev_tensor_label = pickle.load(f, encoding='latin1')
             sample['label'] = bev_tensor_label[:,0:144]
 
-            pc = get_pc_os64_with_path(meta['pc'])
-            pc = filter_pc_os64_with_roi(pc, self.cfg.list_filter_roi, self.cfg.filter_mode)
-            pc = append_image_index_to_pc_os64(pc, self.cfg.list_roi_xy, self.cfg.list_grid_xy)
-
-            sample['proj'] = get_projection_image_from_pointclouds(pc, list_img_size_xy=self.cfg.list_img_size_xy, is_flip=False)
-            sample['proj'] = np.transpose(sample['proj'], (2,0,1))
-            sample['proj'] = sample['proj'].astype(np.float32)
+            sample['proj'] = self.project_pc(meta['pc'])
+            if self.use_temporal:
+                sample['proj_t'] = sample['proj']
+                sample['proj_tm1'] = self.project_pc(meta['pc_tm1'])
+                sample['proj_tm2'] = self.project_pc(meta['pc_tm2'])
             # print(sample['proj'].shape)
 
         elif self.mode_item == 'pc_div':

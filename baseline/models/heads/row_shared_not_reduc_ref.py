@@ -8,8 +8,7 @@ import torch.nn as nn
 import numpy as np
 import cv2
 
-from einops import rearrange, repeat
-from einops.layers.torch import Rearrange
+from baseline.utils.einops_compat import Rearrange, rearrange, repeat
 from baseline.models.registry import HEADS
 
 def pair(t):
@@ -698,4 +697,3 @@ class RowSharNotReducRef(nn.Module):
                                         if not (idx_lane == 255) else (0,0,0)
 
         return temp_rgb_img
-        

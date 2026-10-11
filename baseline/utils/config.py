@@ -9,7 +9,13 @@ from collections import abc
 from importlib import import_module
 
 from addict import Dict
-from yapf.yapflib.yapf_api import FormatCode
+try:
+    from yapf.yapflib.yapf_api import FormatCode
+except ImportError:
+    # YAPF is only used to pretty-print configs; training/config parsing does
+    # not depend on it. Keep the runtime usable in minimal server environments.
+    def FormatCode(text, style_config=None, verify=False):
+        return text, False
 
 BASE_KEY = '_base_'
 DELETE_KEY = '_delete_'

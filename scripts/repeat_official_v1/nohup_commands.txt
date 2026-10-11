@@ -1,0 +1,5 @@
+cd /root/epfs/MSTGMF && ./scripts/repeat_official_v1/launch_once.sh /root/epfs/MSTGMF/runs/repeat_official_v1/nohup/baseline_seed3407.log ./scripts/repeat_official_v1/run_baseline_seed3407.sh
+cd /root/epfs/MSTGMF && ./scripts/repeat_official_v1/launch_once.sh /root/epfs/MSTGMF/runs/repeat_official_v1/nohup/baseline_seed42.log ./scripts/repeat_official_v1/run_baseline_seed42.sh
+cd /root/epfs/MSTGMF && ./scripts/repeat_official_v1/launch_once.sh /root/epfs/MSTGMF/runs/repeat_official_v1/nohup/mstgmf_seed2021.log ./scripts/repeat_official_v1/run_mstgmf_seed2021.sh
+cd /root/epfs/MSTGMF && ./scripts/repeat_official_v1/launch_once.sh /root/epfs/MSTGMF/runs/repeat_official_v1/nohup/mstgmf_seed3407.log ./scripts/repeat_official_v1/run_mstgmf_seed3407.sh
+cd /root/epfs/MSTGMF && ./scripts/repeat_official_v1/launch_once.sh /root/epfs/MSTGMF/runs/repeat_official_v1/nohup/mstgmf_seed42.log ./scripts/repeat_official_v1/run_mstgmf_seed42.sh

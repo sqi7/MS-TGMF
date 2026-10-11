@@ -8,7 +8,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 from functools import partial
-from einops.layers.torch import Rearrange
+from baseline.utils.einops_compat import Rearrange
 
 from baseline.models.registry import BACKBONE
 
@@ -74,4 +74,3 @@ class MixSegNet(nn.Module):
             return x, list_feature
         
         return out
-        

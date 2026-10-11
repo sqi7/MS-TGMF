@@ -166,10 +166,10 @@ class Runner(object):
 
             self.batch_bar.update(1)
 
-    def train(self):
+    def train(self, start_epoch=0):
         train_loader = build_dataloader(self.cfg.dataset.train, self.cfg, is_train=True)
 
-        for epoch in range(self.cfg.epochs):
+        for epoch in range(start_epoch, self.cfg.epochs):
             self.train_epoch(epoch, train_loader)
             if (epoch + 1) % self.cfg.save_ep == 0 or epoch == self.cfg.epochs - 1:
                 self.save_ckpt(epoch)
@@ -178,6 +178,10 @@ class Runner(object):
 
     def validate(self, epoch=None, is_small=False, valid_samples=40):
         self.cfg.is_eval_conditional = False
+        selection_split = getattr(self.cfg, 'selection_split_name', 'test')
+        if epoch is not None:
+            print('* checkpoint selection evaluation uses dataset.{} ({})'.format(
+                'test', selection_split))
         if is_small:
             self.val_loader = build_dataloader(self.cfg.dataset.test, self.cfg, is_train=True)
         else:
@@ -259,7 +263,8 @@ class Runner(object):
         cls_w_conf_f1_strict = np.mean(list_cls_w_conf_f1_strict)
 
         log_val = f'epoch = {epoch}, {conf_f1}, {conf_f1_strict}, {conf_by_cls_f1}, {conf_by_cls_f1_strict}, {cls_f1}, {cls_f1_strict}, {cls_w_conf_f1}, {cls_w_conf_f1_strict}'
-        self.write_to_log(log_val + '\n', os.path.join(self.log_dir, 'val.txt'))
+        selection_log_name = getattr(self.cfg, 'selection_log_name', 'val.txt')
+        self.write_to_log(log_val + '\n', os.path.join(self.log_dir, selection_log_name))
         self.val_info_bar.set_description_str(log_val)
         ### Logging ###
     
@@ -615,3 +620,8 @@ class Runner(object):
 
         self.val_info_bar.set_description_str(log_val)
         ### Logging ###
+
+        metrics = {'total': float(conf_f1)}
+        metrics.update({key: float(value) for key, value in res_dic_conf_f1.items()})
+        metrics['occ4_6'] = float(res_dic_conf_f1['occ456'])
+        return metrics
